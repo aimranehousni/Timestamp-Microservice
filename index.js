@@ -1,57 +1,46 @@
-// server.js
-const express = require('express');
-const cors = require('cors');
+const express = require("express");
 const app = express();
 
-// Basic configuration
-app.use(cors({ optionsSuccessStatus: 200 })); // some legacy browsers choke on 204
-app.use(express.static('public'));
+// Enable CORS
+const cors = require("cors");
+app.use(cors());
 
 // Root endpoint
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/views/index.html');
+app.get("/", (req, res) => {
+  res.send("Timestamp Microservice");
 });
 
-// API endpoint for timestamp conversion
-app.get('/api/:date?', (req, res) => {
-  const { date } = req.params;
-  
-  // Handle empty date parameter - return current time
-  if (!date) {
-    const now = new Date();
-    return res.json({
-      unix: now.getTime(),
-      utc: now.toUTCString()
-    });
-  }
-  
-  let dateObj;
-  
-  // Check if the date is a Unix timestamp (all digits)
-  if (/^\d+$/.test(date)) {
-    // Convert string to number for Unix timestamp
-    dateObj = new Date(parseInt(date));
+// API endpoint
+app.get("/api/:date?", (req, res) => {
+  let dateParam = req.params.date;
+
+  // If date parameter is missing, use current date
+  let date;
+  if (!dateParam) {
+    date = new Date();
   } else {
-    // Try to parse as date string
-    dateObj = new Date(date);
+    // Check if the input is a unix timestamp in milliseconds
+    if (!isNaN(dateParam) && /^\d+$/.test(dateParam)) {
+      date = new Date(parseInt(dateParam));
+    } else {
+      date = new Date(dateParam);
+    }
   }
-  
-  // Check if the date is valid
-  if (dateObj.toString() === 'Invalid Date') {
-    return res.json({ error: 'Invalid Date' });
+
+  // Check for invalid date
+  if (date.toString() === "Invalid Date") {
+    return res.json({ error: "Invalid Date" });
   }
-  
-  // Return the formatted response
+
+  // Valid date
   res.json({
-    unix: dateObj.getTime(),
-    utc: dateObj.toUTCString()
+    unix: date.getTime(),
+    utc: date.toUTCString(),
   });
 });
 
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
-
-module.exports = app;
